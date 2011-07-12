@@ -1,1 +1,2 @@
-subdirs(sicklms)
+subdirs(sicklms sickld)
+
