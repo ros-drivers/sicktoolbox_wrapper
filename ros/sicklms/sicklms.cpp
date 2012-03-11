@@ -152,6 +152,17 @@ void publish_scan(ros::Publisher *pub, uint32_t *range_values,
   pub->publish(scan_msg);
 }
 
+SickLMS::sick_lms_measuring_units_t StringToLmsMeasuringUnits(string units)
+{
+  if (units.compare("mm") == 0)
+    return SickLMS::SICK_MEASURING_UNITS_MM;
+  else if (units.compare("cm") == 0)
+    return SickLMS::SICK_MEASURING_UNITS_CM;
+  
+  return SickLMS::SICK_MEASURING_UNITS_UNKNOWN;
+}
+
+
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "sicklms");
@@ -161,6 +172,7 @@ int main(int argc, char **argv)
 	bool inverted;
 	int angle;
 	double resolution;
+	std::string measuring_units;
 	std::string frame_id;
 	double scan_time = 0;
 	double angle_increment = 0;
@@ -174,8 +186,9 @@ int main(int argc, char **argv)
 	nh_ns.param("baud", baud, 38400);
 	nh_ns.param("connect_delay", delay, 0);
 	nh_ns.param("inverted", inverted, false);
-  nh_ns.param("angle", angle, 0);
+	nh_ns.param("angle", angle, 0);
 	nh_ns.param("resolution", resolution, 0.0);
+	nh_ns.param("units", measuring_units, string());
 	nh_ns.param<std::string>("frame_id", frame_id, "laser");
 	
 	// Check whether or not to support REP 117
@@ -216,17 +229,25 @@ int main(int argc, char **argv)
 
                 // Set the angle and resolution if possible (not an LMSFast) and
                 // the user specifies a setting.
-                if (angle == 0)
-                  angle = sick_lms.GetSickScanAngle();
-                if (resolution == 0.0)
-                  resolution = sick_lms.GetSickScanResolution();
+                int actual_angle = sick_lms.GetSickScanAngle();
+                double actual_resolution = sick_lms.GetSickScanResolution();
+                SickLMS::sick_lms_measuring_units_t actual_units = sick_lms.GetSickMeasuringUnits();
+
+		// Attempt to set measurement angles and angular resolution
                 try {
-                    ROS_INFO("Setting variant to (%i, %f)", angle, resolution);
-                    sick_lms.SetSickVariant(sick_lms.IntToSickScanAngle(angle),
-                                            sick_lms.DoubleToSickScanResolution(resolution));
+                  if ((angle && actual_angle != angle) || (resolution && actual_resolution != resolution)) {
+                     ROS_INFO("Setting variant to (%i, %f)", angle, resolution);
+                     sick_lms.SetSickVariant(sick_lms.IntToSickScanAngle(angle),
+                                             sick_lms.DoubleToSickScanResolution(resolution));
+                  } else {
+                    ROS_INFO("Variant setup not requested or identical to actual (%i, %f)", actual_angle,
+                      actual_resolution);
+                    angle = actual_angle;
+                    resolution = actual_resolution;
+                  }
                 } catch (SickConfigException e) {
-                  int actual_angle = sick_lms.GetSickScanAngle();
-                  double actual_resolution = sick_lms.GetSickScanResolution();
+                  actual_angle = sick_lms.GetSickScanAngle();
+                  actual_resolution = sick_lms.GetSickScanResolution();
                   if (angle != actual_angle) {
                     ROS_WARN("Unable to set scan angle. Using %i instead of %i.", actual_angle, angle);
                     angle = actual_angle;
@@ -236,15 +257,33 @@ int main(int argc, char **argv)
                     resolution = actual_resolution;
                   }
                 }
+                
+                // Attempt to set measurement output mode to cm or mm
+                try {
+		  if (!measuring_units.empty() && (actual_units != StringToLmsMeasuringUnits(measuring_units))) {
+                    ROS_INFO("Setting measuring units to '%s'", measuring_units.c_str());
+                    actual_units = StringToLmsMeasuringUnits(measuring_units);
+                    sick_lms.SetSickMeasuringUnits(actual_units);
+                  } else {
+                    ROS_INFO("Measuring units setup not requested or identical to actual ('%s')",
+                      sick_lms.SickMeasuringUnitsToString(actual_units).c_str());
+                  }
+		}  catch (SickConfigException e) {
+		  actual_units = sick_lms.GetSickMeasuringUnits();
+		  if (StringToLmsMeasuringUnits(measuring_units) != actual_units) {
+                    ROS_WARN("Unable to set measuring units. Using '%s' instead of '%s'.",
+                      sick_lms.SickMeasuringUnitsToString(actual_units).c_str(), measuring_units.c_str());
+                    measuring_units = sick_lms.SickMeasuringUnitsToString(actual_units);
+		  }
+		}
 
-		SickLMS::sick_lms_measuring_units_t u = sick_lms.GetSickMeasuringUnits();
-		if (u == SickLMS::SICK_MEASURING_UNITS_CM)
+		if (actual_units == SickLMS::SICK_MEASURING_UNITS_CM)
 			scale = 0.01;
-		else if (u == SickLMS::SICK_MEASURING_UNITS_MM)
+		else if (actual_units == SickLMS::SICK_MEASURING_UNITS_MM)
 			scale = 0.001;
 		else
 		{
-			ROS_ERROR("Bogus measuring unit.");
+			ROS_ERROR("Invalid measuring unit.");
 			return 1;
 		}
 
@@ -354,7 +393,7 @@ int main(int argc, char **argv)
 	}
 	catch (...)
 	{
-		ROS_ERROR("woah! error!");
+		ROS_ERROR("Unknown error.");
 		return 1;
 	}
 	try
@@ -363,10 +402,10 @@ int main(int argc, char **argv)
 	}
 	catch (...)
 	{
-		ROS_ERROR("error during uninitialize");
+		ROS_ERROR("Error during uninitialize");
 		return 1;
 	}
-	ROS_INFO("success.\n");
+	ROS_INFO("Success.\n");
 
 	return 0;
 }
