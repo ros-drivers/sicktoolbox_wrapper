@@ -36,13 +36,15 @@
 #include <sicklms-1.0/SickLMS.hh>
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
+#include <diagnostic_updater/diagnostic_updater.h> // Publishing over the diagnostics channels.
+#include <diagnostic_updater/publisher.h>
 using namespace SickToolbox;
 using namespace std;
 
 // Tick-tock transition variable, controls if the driver outputs NaNs and Infs
 bool use_rep_117_;
 
-void publish_scan(ros::Publisher *pub, uint32_t *range_values,
+void publish_scan(diagnostic_updater::DiagnosedPublisher<sensor_msgs::LaserScan> *pub, uint32_t *range_values,
                   uint32_t n_range_values, uint32_t *intensity_values,
                   uint32_t n_intensity_values, double scale, ros::Time start,
                   double scan_time, bool inverted, float angle_min,
@@ -166,6 +168,8 @@ SickLMS::sick_lms_measuring_units_t StringToLmsMeasuringUnits(string units)
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "sicklms");
+	ros::NodeHandle nh;
+	ros::NodeHandle nh_ns("~");
 	string port;
 	int baud;
 	int delay;
@@ -178,10 +182,32 @@ int main(int argc, char **argv)
 	double angle_increment = 0;
 	float angle_min = 0.0;
 	float angle_max = 0.0;
-
-	ros::NodeHandle nh;
-	ros::NodeHandle nh_ns("~");
-	ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1);
+	
+	// Diagnostic publisher parameters
+	double desired_freq;
+	nh_ns.param<double>("desired_frequency", desired_freq, 75.0);
+	double min_freq;
+	nh_ns.param<double>("min_frequency", min_freq, desired_freq);
+	double max_freq;
+	nh_ns.param<double>("max_frequency", max_freq, desired_freq);
+	double freq_tolerance; // Tolerance before error, fractional percent of frequency.
+ 	nh_ns.param<double>("frequency_tolerance", freq_tolerance, 0.3);
+	int window_size; // Number of samples to consider in frequency
+	nh_ns.param<int>("window_size", window_size, 30);
+	double min_delay; // The minimum publishing delay (in seconds) before error.  Negative values mean future dated messages.
+	nh_ns.param<double>("min_acceptable_delay", min_delay, 0.0);
+	double max_delay; // The maximum publishing delay (in seconds) before error.
+	nh_ns.param<double>("max_acceptable_delay", max_delay, 0.2);
+	std::string hardware_id;
+	nh_ns.param<std::string>("hardware_id", hardware_id, "SICK LMS");
+	
+	// Set up diagnostics
+	diagnostic_updater::Updater updater;
+	updater.setHardwareID(hardware_id);
+	diagnostic_updater::DiagnosedPublisher<sensor_msgs::LaserScan> scan_pub(nh.advertise<sensor_msgs::LaserScan>("scan", 10), updater, 
+	    diagnostic_updater::FrequencyStatusParam(&min_freq, &max_freq, freq_tolerance, window_size),
+	    diagnostic_updater::TimeStampStatusParam(min_delay, max_delay));
+	
 	nh_ns.param("port", port, string("/dev/lms200"));
 	nh_ns.param("baud", baud, 38400);
 	nh_ns.param("connect_delay", delay, 0);
@@ -340,7 +366,6 @@ int main(int argc, char **argv)
 	}
 	try
 	{
-    ros::Time last_scan_time = ros::Time::now();
 		while (ros::ok())
 		{
       if (sick_lms.IsSickLMSFast()) {
@@ -378,17 +403,12 @@ int main(int argc, char **argv)
       ros::Time end_of_scan = ros::Time::now();
       ros::Time start = end_of_scan - ros::Duration(scan_time / 2.0);
 
-      ros::Duration diff = start - last_scan_time;
-      if (diff > ros::Duration(scan_time * 1.5)) {
-        ROS_WARN_STREAM("A scan was probably missed. The last scan was "
-                        << diff.toSec() << " seconds ago.");
-      }
-      last_scan_time = start;
-
 			publish_scan(&scan_pub, range_values, n_range_values, intensity_values,
                    n_intensity_values, scale, start, scan_time, inverted,
                    angle_min, angle_max, frame_id);
 			ros::spinOnce();
+			// Update diagnostics
+			updater.update();
 		}
 	}
 	catch (...)
