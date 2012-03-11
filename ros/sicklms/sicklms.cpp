@@ -157,20 +157,22 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "sicklms");
 	string port;
 	int baud;
+	int delay;
 	bool inverted;
-  int angle;
-  double resolution;
+	int angle;
+	double resolution;
 	std::string frame_id;
 	double scan_time = 0;
-  double angle_increment = 0;
-  float angle_min = 0.0;
-  float angle_max = 0.0;
+	double angle_increment = 0;
+	float angle_min = 0.0;
+	float angle_max = 0.0;
 
 	ros::NodeHandle nh;
 	ros::NodeHandle nh_ns("~");
 	ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1);
 	nh_ns.param("port", port, string("/dev/lms200"));
 	nh_ns.param("baud", baud, 38400);
+	nh_ns.param("connect_delay", delay, 0);
 	nh_ns.param("inverted", inverted, false);
   nh_ns.param("angle", angle, 0);
 	nh_ns.param("resolution", resolution, 0.0);
@@ -206,7 +208,11 @@ int main(int argc, char **argv)
 
 	try
 	{
-		sick_lms.Initialize(desired_baud);
+		uint32_t on_delay = 0;
+		if(delay > 0){
+		  on_delay = delay;
+		}
+		sick_lms.Initialize(desired_baud, on_delay);
 
                 // Set the angle and resolution if possible (not an LMSFast) and
                 // the user specifies a setting.
