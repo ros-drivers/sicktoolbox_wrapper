@@ -223,11 +223,12 @@ int main(int argc, char **argv)
 	{
 	  nh.getParam(key, use_rep_117_);
 	} else {
-	  use_rep_117_ = false;
+    ROS_WARN("The use_rep_117 parameter has not been specified and has been automatically set to true.  This parameter will be removed in Hydromedusa.  Please see: http://ros.org/wiki/rep_117/migration");
+	  use_rep_117_ = true;
 	}
 	
 	if(!use_rep_117_){ // Warn the user that they need to update their code.
-	  ROS_WARN("The use_rep_117 parameter has not been set or is set to false.  Please see: http://ros.org/wiki/rep_117/migration");
+	  ROS_WARN("The use_rep_117 parameter is set to false.  This parameter will be removed in Hydromedusa.  Please see: http://ros.org/wiki/rep_117/migration");
 	}
 
 	SickLMS::sick_lms_baud_t desired_baud = SickLMS::IntToSickBaud(baud);
