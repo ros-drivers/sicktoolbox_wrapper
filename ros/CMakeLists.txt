@@ -1,2 +1,0 @@
-subdirs(sicklms sickld)
-

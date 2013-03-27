@@ -8,7 +8,7 @@
  */ 
 
 #include <iostream>
-#include <sickld-1.0/SickLD.hh>
+#include <sicktoolbox/SickLD.hh>
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 #include <deque>
