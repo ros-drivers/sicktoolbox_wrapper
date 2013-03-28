@@ -59,16 +59,12 @@ target_link_libraries(log_scans ${catkin_LIBRARIES})
 # )
 
 ## Mark executables and/or libraries for installation
-#install(TARGETS SickLD SickLMS1xx SickLMS2xx LDConfigLib ld_config 
-#  ld_more_config ld_multi_sector ld_single_sector lms1xx_simple_app 
-#  lms2xx_config lms2xx_mean_values lms2xx_partial_scan lms2xx_real_time_indices 
-#  lms2xx_set_variant lms2xx_simple_app lms2xx_stream_range_and_reflect lms2xx_subrange
-#  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-#)
+install(TARGETS sickld sicklms print_scans time_scans
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
-## TODO Move headers that aren't needed externally back into the source
 ## Mark cpp header files for installation
 #install(DIRECTORY include/${PROJECT_NAME}/
 #  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
@@ -76,10 +72,8 @@ target_link_libraries(log_scans ${catkin_LIBRARIES})
 #  PATTERN ".svn" EXCLUDE
 #)
 
-## TODO There are readmes, etc, create install rules for these
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
+install(FILES
+   sick_test.vcg
+   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
