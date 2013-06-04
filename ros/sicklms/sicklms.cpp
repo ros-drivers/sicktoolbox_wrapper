@@ -191,6 +191,9 @@ int main(int argc, char **argv)
 	nh_ns.param<double>("max_acceptable_delay", max_delay, 0.2);
 	std::string hardware_id;
 	nh_ns.param<std::string>("hardware_id", hardware_id, "SICK LMS");
+	double time_offset_sec;
+ 	nh_ns.param<double>("time_offset", time_offset_sec, 0.0);
+	ros::Duration time_offset(time_offset_sec);
 	
 	// Set up diagnostics
 	diagnostic_updater::Updater updater;
@@ -383,10 +386,10 @@ int main(int argc, char **argv)
       }
       // Figure out the time that the scan started. Since we just
       // fished receiving the data, we'll assume that the mirror is at
-      // 180 degrees now, or half a scan time. In other words, we
-      // assume a zero transfer time of the data.
+      // 180 degrees now, or half a scan time.
+      // Add user provided time offset to handle constant latency.
       ros::Time end_of_scan = ros::Time::now();
-      ros::Time start = end_of_scan - ros::Duration(scan_time / 2.0);
+      ros::Time start = end_of_scan - ros::Duration(scan_time / 2.0) + time_offset;
 
 			publish_scan(&scan_pub, range_values, n_range_values, intensity_values,
                    n_intensity_values, scale, start, scan_time, inverted,
