@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(sicktoolbox_wrapper)
 
-find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs sicktoolbox rosconsole diagnostic_updater)
+find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs sicktoolbox rosconsole diagnostic_updater tf)
 
 ## System dependencies are found with CMake's conventions
 #find_package(Threads)
@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs sicktoolbox rosconsol
 catkin_package(
   INCLUDE_DIRS
   LIBRARIES
-  CATKIN_DEPENDS roscpp sensor_msgs sicktoolbox rosconsole diagnostic_updater
+  CATKIN_DEPENDS roscpp sensor_msgs sicktoolbox rosconsole diagnostic_updater tf
   DEPENDS
 )
 
@@ -34,6 +34,9 @@ target_link_libraries(sickld ${catkin_LIBRARIES})
 
 add_executable(sicklms ros/sicklms/sicklms.cpp)
 target_link_libraries(sicklms ${catkin_LIBRARIES})
+
+add_executable(sicknav350 ros/sicknav350/sicknav350.cpp)
+target_link_libraries(sicknav350 ${catkin_LIBRARIES})
 
 add_executable(print_scans standalone/print_scans.cpp)
 target_link_libraries(print_scans ${catkin_LIBRARIES})
