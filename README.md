@@ -11,7 +11,7 @@ cd ~/catkin_ws/src
 2. Clone the two required repositories
 ```
 git clone <git url for sicktoolbox> (https://github.com/SantoshBanisetty/sicktoolbox.git)
-git clone <git url for sicktoolbox_wrapper> 
+git clone <git url for sicktoolbox_wrapper> (https://github.com/ros-drivers/sicktoolbox_wrapper.git)
 ```
 
 3. Make the project
