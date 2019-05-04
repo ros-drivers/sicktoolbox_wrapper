@@ -2,8 +2,8 @@
 Changelog for package sicktoolbox_wrapper
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.4 (2019-05-04)
+------------------
 * Merge pull request `#6 <https://github.com/ros-drivers/sicktoolbox_wrapper/issues/6>`_ from SantoshBanisetty/kinetic-devel
   Kinetic-devel and readme
 * updated Readme
